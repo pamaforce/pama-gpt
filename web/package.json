@@ -1,0 +1,47 @@
+{
+	"name": "pama_gpt",
+	"version": "0.1.0",
+	"private": true,
+	"scripts": {
+		"serve": "vue-cli-service serve",
+		"build": "vue-cli-service build",
+		"lint": "vue-cli-service lint"
+	},
+	"dependencies": {
+		"axios": "^1.5.0",
+		"core-js": "^3.6.5",
+		"js-cookie": "^3.0.5",
+		"js-md5": "^0.8.0",
+		"postcss": "^8.4.19",
+		"postcss-pxtorem": "^5.1.1",
+		"swiper": "^10.3.1",
+		"vue": "^2.6.11",
+		"vue-awesome-swiper": "^4.1.1",
+		"vue-router": "^3.2.0"
+	},
+	"devDependencies": {
+		"@vue/cli-plugin-babel": "~4.5.11",
+		"@vue/cli-service": "~4.5.11",
+		"babel-eslint": "^10.1.0",
+		"babel-plugin-component": "^1.1.1",
+		"vue-template-compiler": "^2.6.11"
+	},
+	"postcss": {
+		"plugins": {
+			"postcss-pxtorem": {
+				"rootValue": 16,
+				"propList": [
+					"*"
+				]
+			}
+		}
+	},
+	"browserslist": [
+		"> 1%",
+		"last 2 versions",
+		"not dead"
+	],
+	"volta": {
+		"node": "14.20.1"
+	}
+}
