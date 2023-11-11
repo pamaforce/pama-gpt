@@ -16,6 +16,7 @@ let routes = [
 		component: () => import("@/views/index.vue"),
 		meta: {
 			requireAuth: true,
+			keepAlive: true,
 		},
 	},
 	{

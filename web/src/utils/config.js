@@ -1,3 +1,11 @@
+/*
+	机器人配置文件（由于）
+	添加流程：
+		先从Poe中找到机器人的名称
+		再下载机器人头像到@/assets
+		再复制机器人的描述
+		最后在下面的preset中添加机器人的信息
+*/
 export default {
 	preset: {
 		Assistant: {
@@ -11,6 +19,10 @@ export default {
 		"GPT-4": {
 			avatar: "GPT-4.png",
 			desc: "OpenAI 最强大的模型。在定量问题（数学和物理）、创意写作和许多其他具有挑战性的任务方面比 ChatGPT 更强。",
+		},
+		"DALL-E-3": {
+			avatar: "DALL-E-3.jpeg",
+			desc: "OpenAI最强大的图像生成模型。根据用户最近的提示生成具有复杂细节的高质量图像。",
 		},
 		StableDiffusionXL: {
 			avatar: "StableDiffusionXL.jpeg",
@@ -79,6 +91,10 @@ export default {
 		"GPT-3.5-Turbo": {
 			avatar: "ChatGPT.png",
 			desc: "由 gpt-3.5-turbo 提供支持。无系统Prompt。",
+		},
+		"fw-mistral-7b": {
+			avatar: "fw-mistral-7b.jpeg",
+			desc: "Bot powered by Fireworks.ai's hosted Mistral-7b-instruct model https://app.fireworks.ai/models/fireworks/mistral-7b-instruct-4k",
 		},
 	},
 };
