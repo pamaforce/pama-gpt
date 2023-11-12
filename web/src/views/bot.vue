@@ -302,6 +302,7 @@ export default {
 .top-card {
   position: relative;
   width: 600px;
+  max-width: calc(100vw - 40px);
   border-radius: 20px;
   background-color: #f7f7f7;
   display: flex;
@@ -367,6 +368,7 @@ export default {
   position: fixed;
   bottom: 20px;
   width: 600px;
+  max-width: calc(100vw - 40px);
   padding: 12px;
   padding-left: 18px;
   background-color: #f7f7f7;
@@ -580,6 +582,7 @@ export default {
 }
 .chat-card {
   width: 600px;
+  max-width: calc(100vw - 40px);
   margin: 5px 0;
   overflow: hidden;
   display: flex;
@@ -628,6 +631,14 @@ export default {
   color: #000;
   padding: 10px;
   max-width: 480px;
+}
+@media screen and (max-width: 480px) {
+  .card-0 {
+    max-width: calc(100vw - 160px);
+  }
+  .card-1 {
+    max-width: calc(100vw - 160px);
+  }
 }
 .card-role {
   display: flex;

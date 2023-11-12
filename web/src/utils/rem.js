@@ -9,7 +9,7 @@ function setRem() {
 		htmlDom.style.fontSize = htmlWidth / 120 + "px";
 	} else {
 		//设置根元素字体大小
-		htmlDom.style.fontSize = htmlWidth / 27 + "px";
+		htmlDom.style.fontSize = htmlWidth / 40 + "px";
 	}
 }
 // 初始化
