@@ -32,6 +32,12 @@ export default {
 p {
   margin: 0;
 }
+pre {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  overflow: auto;
+  white-space: pre-wrap;
+}
 .el-dialog {
   --el-dialog-title-font-size: 36px !important;
   --el-dialog-font-line-height: unset !important;
