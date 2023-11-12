@@ -56,7 +56,9 @@
           (item.error ? 'background-color:#ad1840;color:white' : '')
         "
       >
-        <vue-markdown class="content">{{ item.content }}</vue-markdown>
+        <vue-markdown class="content" :key="demoKey">{{
+          item.content
+        }}</vue-markdown>
       </div>
     </div>
     <div class="bottom-blank"></div>
@@ -107,6 +109,7 @@ export default {
   data() {
     return {
       info: {},
+      demoKey: 0,
       question: "",
       loading: false,
       chatList: [],
@@ -117,6 +120,10 @@ export default {
     VueMarkdown,
   },
   methods: {
+    forceRerender() {
+      this.demoKey =
+        "demo-" + +new Date() + ((Math.random() * 1000).toFixed(0) + "");
+    },
     handleClick() {
       if (this.loading) return;
       this.question = this.question.trim();
@@ -187,7 +194,7 @@ export default {
     },
     connectSocket() {
       return new Promise((resolve, reject) => {
-        this.socket = io.connect("http://localhost:5000", {
+        this.socket = io.connect("http://127.0.0.1:5000", {
           extraHeaders: {
             Authorization: "Bearer " + getToken(),
           },
@@ -202,6 +209,8 @@ export default {
         this.socket.on("response", (data) => {
           console.log("Response: " + data);
           this.chatList[this.chatList.length - 1].content += data;
+          this.forceRerender();
+          this.scrollBottom();
         });
 
         this.socket.on("chat_id", (data) => {
@@ -267,10 +276,11 @@ export default {
     getChatHistory(this.info.name).then((res) => {
       if (res.code === 0) {
         res.chat_history.map((item) => {
-          item.role = item.author === "human" ? 0 : 1;
-          item.content = item.text;
+          this.chatList.push({
+            role: item.author === "human" ? 0 : 1,
+            content: item.text,
+          });
         });
-        this.chatList = res.chat_history;
         setTimeout(() => {
           this.scrollBottom();
         }, 2000);
