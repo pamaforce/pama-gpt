@@ -11,7 +11,9 @@
 ## 项目代码
 
 项目开源在GitHub，项目成员通过Git进行合作，仓库地址：https://github.com/pamaforce/pama-gpt
-
+测试账号：`test` 密码：`test`
+目前项目部署在云服务器上，网页端体验地址：http://pama.vip/gpt
+移动端使用React Native，Android安装包地址：https://github.com/pamaforce/pama-gpt/releases/download/1.0.0/app-release.apk
 
 ## 项目结构
 
