@@ -1,12 +1,14 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
+from flask_socketio import SocketIO, emit, disconnect
 from config import BaseConfig
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from functools import wraps
 from api import PoeApi
-from example import PoeExample
 import datetime
 import jwt
+import threading
+
 
 app = Flask(__name__)
 
@@ -15,11 +17,8 @@ app.config.from_object(BaseConfig)
 CORS(app)
 # 初始化扩展，传入 app 创建 db
 db = SQLAlchemy(app)
-
-# 全局变量，用来在不同函数之间传递用户 ID
-global_user_id = None
+socketio = SocketIO(app, cors_allowed_origins="*")
 poe_api = PoeApi(app.config["POE_TOKEN"], proxy=True)
-#poe_api = PoeExample(app.config["POE_TOKEN"]).chat_with_bot()
 
 # 定义用户模型
 class Users(db.Model):
@@ -31,26 +30,29 @@ class Users(db.Model):
     def __init__(self, username, password):
         self.username = username
         self.password = password
-        
+ 
 class Sessions(db.Model):
-
-    session_id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True)
+    chatId = db.Column(db.Integer)
+    bot = db.Column(db.String(255))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
-    def __init__(self, user_id, session_id):
+    def __init__(self, chatId, bot, user_id):
+        self.chatId = chatId
+        self.bot = bot
         self.user_id = user_id
-        self.session_id = session_id
         
     def to_dict(self):
         return {
-            "session_id": self.session_id,
+            "bot": self.bot,
+            "chatId": self.chatId,
             "user_id": self.user_id,
         }
+                
         
 def jwt_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        global global_user_id
         # 从请求头中获取 Bearer Token
         bearer_token = request.headers.get("Authorization")
         if bearer_token:
@@ -62,7 +64,7 @@ def jwt_required(f):
 
                 # 获取用户 ID
                 user_id = payload["user_id"]
-                global_user_id = user_id
+                session['user_id'] = user_id
 
                 # 根据用户 ID 查询用户
                 user = Users.query.get(user_id)
@@ -83,6 +85,43 @@ def jwt_required(f):
             # 未提供 Bearer Token
             return jsonify({"code": 403, "message": "好像我还不认识你诶"})
     return decorated_function
+
+@socketio.on('connect')
+def handle_connect():
+    # 从请求头中获取 Bearer Token
+    bearer_token = request.headers.get("Authorization")
+    if bearer_token:
+        try:
+            # 提取 JWT
+            jwt_token = bearer_token.split(" ")[1]
+            # 解码 JWT
+            payload = jwt.decode(jwt_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+
+            # 获取用户 ID
+            user_id = payload["user_id"]
+
+            # 根据用户 ID 查询用户
+            user = Users.query.get(user_id)
+
+            if user:
+                # 如果用户存在，将用户 ID 存储到 session 中
+                session['user_id'] = user_id
+            else:
+                # 用户不存在
+                emit('error', {"code": 403, "message": "用户好像不存在诶"})
+                disconnect()
+        except jwt.ExpiredSignatureError:
+            # JWT 已过期
+            emit('error', {"code": 403, "message": "登录过期惹，请再证明一次你是你哦"})
+            disconnect()
+        except (jwt.InvalidTokenError, IndexError):
+            # 无效的 JWT 或未提供 JWT
+            emit('error', {"code": 403, "message": "登录无效惹，请再证明一次你是你哦"})
+            disconnect()
+    else:
+        # 未提供 Bearer Token
+        emit('error', {"code": 403, "message": "好像我还不认识你诶"})
+        disconnect()
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -111,16 +150,6 @@ def login():
         # 用户不存在
         return jsonify({"code":400,"message": "用户好像不存在诶"})
 
-@app.route("/sessions", methods=["GET"])
-@jwt_required
-def get_sessions():
-    global global_user_id
-    # 根据用户 ID 获取会话
-    sessions = Sessions.query.filter_by(user_id=global_user_id).all()
-    # 将会话转换为字典列表
-    sessions_dict_list = [session.to_dict() for session in sessions]
-    return jsonify({"code": 0, "message": "成功", "sessions": sessions_dict_list})
-
 @app.route("/categories", methods=["GET"])
 @jwt_required
 def get_categories():
@@ -145,8 +174,56 @@ def get_chat_bots():
 @jwt_required
 def get_chat_history():
     bot = request.args.get("bot")
-    chat_history = poe_api.get_chat_history(bot=bot)
+    chatId = get_chatId(bot)
+    if(chatId is None):
+        return jsonify({"code": 0, "message": "成功", "chat_history": []})
+    chat_history = poe_api.get_previous_messages(bot=bot,chatId=chatId)
     return jsonify({"code": 0, "message": "成功", "chat_history": chat_history})
 
+@app.route("/update_chat_id", methods=["POST"])
+@jwt_required
+def update_chat_id():
+    bot = request.form.get("bot")
+    chatId = request.form.get("chatId")
+    update_chatId(bot, chatId)
+    return jsonify({"code": 0, "message": "成功"})
+
+def update_chatId(bot, chatId):
+    s = Sessions.query.filter_by(bot=bot, user_id=session.get('user_id')).first()
+    if s:
+        s.chatId = chatId
+    else:
+        s = Sessions(bot=bot, user_id=session.get('user_id'), chatId=chatId)
+        db.session.add(s)
+    db.session.commit()
+
+def get_chatId(bot):
+    s = Sessions.query.filter_by(bot=bot, user_id=session.get('user_id')).first()
+    if s:
+        return s.chatId
+    return None
+
+def send_messages(bot, message,chatId, sid):
+    newChatId = None
+    for chunk in poe_api.send_message(bot, message, chatId):
+        socketio.emit('response', chunk["response"], room=sid)
+        newChatId = chunk["chatId"]
+    if chatId is None:
+        socketio.emit('chat_id',newChatId, room=sid)       
+    socketio.emit('response_end', room=sid)
+
+@socketio.on('chat')
+def handle_chat(data):
+    user_id = session.get('user_id')
+    if user_id is None:
+        emit('error', {"code": 403, "message": "好像我还不认识你诶"})
+        return
+
+    bot = data.get('bot')
+    message = data.get('message')
+    chatId = get_chatId(bot)
+    sid = request.sid
+    threading.Thread(target=send_messages, args=(bot, message,chatId, sid)).start()
+        
 if __name__ == '__main__':
-    app.run()
+    socketio.run(app)

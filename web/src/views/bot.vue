@@ -5,9 +5,22 @@
       <div class="card-text">
         <div class="card-title">
           <p class="card-title-p">{{ info.name }}</p>
-          <div class="back" @click="$router.push('/')">
-            <img src="../assets/back.svg" />
-            <p>返回主页</p>
+          <div class="card-btns">
+            <div class="refresh" @click="refreshChatId" title="刷新对话">
+              <svg
+                viewBox="0 0 24 24"
+                fill="black"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M19.54 3.66c-.13-.49-.45-.9-.89-1.16-.44-.26-.95-.32-1.45-.19-.49.13-.9.45-1.16.89l-3.48 6.03L10.42 8a.738.738 0 0 0-1.02.27L8.28 10.2c-.1.17-.13.38-.08.57.05.19.18.36.35.46l.31.18c-2.21 2.1-6.06 3.64-6.1 3.66-.26.1-.45.35-.47.63-.03.28.11.55.35.7l2.01 1.25c.19.12.42.15.63.08.03-.01.48-.16 1.07-.42-.1.15-.18.24-.18.24-.15.16-.22.39-.2.61.03.22.16.42.35.54l4.99 3.1c.12.08.26.11.4.11.16 0 .32-.05.45-.15.11-.09 2.63-2.04 3.74-6.29l.31.18a.746.746 0 0 0 1.02-.27l1.12-1.93c.1-.17.13-.38.08-.57a.77.77 0 0 0-.35-.46l-2.21-1.27 3.48-6.03c.25-.45.32-.97.19-1.46Zm-7.91 16.56-3.84-2.39c.28-.49.59-1.2.65-2.07a.758.758 0 0 0-.38-.71.747.747 0 0 0-.8.04c-.74.52-1.65.91-2.13 1.09l-.49-.3c1.51-.71 3.96-2.04 5.56-3.7l4.33 2.5c-.69 3.03-2.2 4.84-2.9 5.54Zm4.68-6.26L9.96 10.3l.36-.63 4.15 2.39 2.2 1.27-.36.63Zm1.74-9.6-3.48 6.03-.7-.4 3.48-6.03c.11-.19.36-.26.55-.15a.405.405 0 0 1 .15.55ZM16.75 21.14a1.25 1.25 0 1 0 0-2.5 1.25 1.25 0 0 0 0 2.5ZM19 17.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2ZM20.25 19.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
+                ></path>
+              </svg>
+            </div>
+            <div class="back" @click="$router.push('/')">
+              <img src="../assets/back.svg" />
+              <p>返回主页</p>
+            </div>
           </div>
         </div>
         <p class="card-desc">{{ info.desc }}</p>
@@ -19,20 +32,43 @@
       :key="i"
     >
       <div
+        class="card-role"
+        v-if="item.role === 1"
+        :style="
+          'animation-delay:' +
+          (item.delay === undefined
+            ? i * 100 + 500 > 2000
+              ? 2000
+              : i * 100 + 500
+            : 0) +
+          'ms;'
+        "
+      >
+        <img :src="require('../assets/' + info.avatar)" class="role-avatar" />
+        <p class="role-name">{{ info.name }}</p>
+      </div>
+      <div
         :class="'card-' + item.role"
         :style="
           'animation-delay:' +
           (item.delay === undefined ? i * 100 + 500 : 0) +
-          'ms'
+          'ms;' +
+          (item.error ? 'background-color:#ad1840;color:white' : '')
         "
       >
-        <p>{{ item.content }}</p>
+        <vue-markdown class="content">{{ item.content }}</vue-markdown>
       </div>
     </div>
     <div class="bottom-blank"></div>
     <div class="bottom-fixed"></div>
     <div class="user-input">
-      <textarea class="textarea" v-model="question" :rows="1" ref="input" />
+      <textarea
+        class="textarea"
+        v-model="question"
+        :rows="1"
+        ref="input"
+        placeholder="问点什么吧~"
+      />
       <div
         :class="'btn' + (!loading && question !== '' ? '' : ' btn-disable')"
         @click="handleClick()"
@@ -62,7 +98,11 @@
 </template>
 
 <script>
+import { updateChatId, getChatHistory } from "@/api/index";
+import VueMarkdown from "vue-markdown";
 import config from "@/utils/config";
+import { getToken } from "@/utils/auth";
+import io from "socket.io-client";
 export default {
   data() {
     return {
@@ -70,7 +110,11 @@ export default {
       question: "",
       loading: false,
       chatList: [],
+      socket: null,
     };
+  },
+  components: {
+    VueMarkdown,
   },
   methods: {
     handleClick() {
@@ -83,15 +127,47 @@ export default {
       this.$refs.input.style.height = "auto";
       this.chatList.push({ role: 0, content: ques, delay: 0 });
       this.scrollBottom();
-      setTimeout(() => {
-        this.loading = false;
-        this.chatList.push({
-          role: 1,
-          content: "这是对" + ques + "的回复",
-          delay: 0,
-        });
-        this.scrollBottom();
-      }, 2000);
+      if (this.socket === null) {
+        this.connectSocket()
+          .then(() => {
+            this.sendMsg(ques);
+          })
+          .catch((err) => {
+            this.loading = false;
+            this.chatList.push({
+              role: 1,
+              content: err,
+              error: true,
+              delay: 0,
+            });
+            this.scrollBottom();
+          });
+      } else {
+        this.sendMsg(ques);
+      }
+    },
+    sendMsg(msg) {
+      this.chatList.push({
+        role: 1,
+        content: "",
+        delay: 0,
+      });
+      this.socket.emit("chat", { bot: this.info.name, message: msg });
+    },
+    refreshChatId() {
+      updateChatId({ bot: this.info.name }).then((res) => {
+        if (res.code === 0) {
+          if (this.socket) {
+            this.socket.disconnect();
+            this.socket = null;
+          }
+          this.chatList = [];
+          this.loading = false;
+          this.scrollBottom();
+          this.$refs.input.focus();
+          this.$forceUpdate();
+        }
+      });
     },
     scrollBottom() {
       this.$nextTick(() => {
@@ -101,6 +177,62 @@ export default {
         });
       });
     },
+    handleResponseEnd() {
+      this.loading = false;
+      this.scrollBottom();
+      this.$refs.input.focus();
+    },
+    connectSocket() {
+      return new Promise((resolve, reject) => {
+        this.socket = io.connect("http://localhost:5000", {
+          extraHeaders: {
+            Authorization: "Bearer " + getToken(),
+          },
+          timeout: 5000,
+        });
+
+        this.socket.on("connect", () => {
+          console.log("Connected!");
+          resolve("Connected");
+        });
+
+        this.socket.on("response", (data) => {
+          console.log("Response: " + data);
+          this.chatList[this.chatList.length - 1].content += data;
+        });
+
+        this.socket.on("chat_id", (data) => {
+          updateChatId({ bot: this.info.name, chatId: data });
+        });
+
+        this.socket.on("response_end", () => {
+          this.handleResponseEnd();
+        });
+
+        this.socket.on("error", (data) => {
+          console.error("Error: " + JSON.stringify(data));
+          this.socket = null;
+          reject("Error: " + JSON.stringify(data));
+        });
+
+        this.socket.on("connect_error", (error) => {
+          console.error("Connect error: " + error);
+          this.socket = null;
+          reject("Connect error: " + error);
+        });
+
+        this.socket.on("connect_timeout", () => {
+          console.error("Connect timeout");
+          this.socket = null;
+          reject("Connect timeout");
+        });
+      });
+    },
+  },
+  beforeDestroy() {
+    if (this.socket) {
+      this.socket.disconnect();
+    }
   },
   mounted() {
     let textarea = document.querySelector("textarea");
@@ -124,6 +256,18 @@ export default {
       avatar: "ChatGPT.png",
     };
     this.info.name = this.$route.params.bot;
+    getChatHistory(this.info.name).then((res) => {
+      if (res.code === 0) {
+        res.chat_history.map((item) => {
+          item.role = item.author === "human" ? 0 : 1;
+          item.content = item.text;
+        });
+        this.chatList = res.chat_history;
+        setTimeout(() => {
+          this.scrollBottom();
+        }, 2000);
+      }
+    });
   },
 };
 </script>
@@ -155,6 +299,16 @@ export default {
 .card-text {
   display: flex;
   flex-direction: column;
+  flex-grow: 2;
+}
+.refresh {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 10px;
 }
 .card-title {
   display: flex;
@@ -408,6 +562,7 @@ export default {
   margin: 5px 0;
   overflow: hidden;
   display: flex;
+  flex-direction: column;
 }
 .bottom-blank {
   height: 100px;
@@ -428,10 +583,10 @@ export default {
   animation: bottom-in 0.5s ease-in-out forwards;
 }
 .chat-card-0 {
-  justify-content: flex-end;
+  align-items: flex-end;
 }
 .chat-card-1 {
-  justify-content: flex-start;
+  align-items: flex-start;
 }
 .card-0 {
   background-color: red;
@@ -453,8 +608,32 @@ export default {
   padding: 10px;
   max-width: 480px;
 }
+.card-role {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+  transform: translateX(-100%);
+  animation: left-in 0.5s ease-in-out forwards;
+}
+.role-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  margin-right: 5px;
+}
+.role-name {
+  font-size: 15px;
+  margin: 0;
+}
 .chat-card p {
   margin: 0;
+}
+.content {
+  word-wrap: break-word;
+}
+.card-btns {
+  display: flex;
+  align-items: center;
 }
 @keyframes right-in {
   0% {

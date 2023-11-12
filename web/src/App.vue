@@ -29,6 +29,9 @@ export default {
   font-family: "PingFangSC";
   box-sizing: border-box;
 }
+p {
+  margin: 0;
+}
 .el-dialog {
   --el-dialog-title-font-size: 36px !important;
   --el-dialog-font-line-height: unset !important;
