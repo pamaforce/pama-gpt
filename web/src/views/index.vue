@@ -15,6 +15,7 @@
     <div :class="'hello hello-4' + (init ? ' init-4' : '')">
       <img src="../assets/icon.png" />
     </div>
+    <div class="exit" @click="logout">退出登录</div>
   </div>
 </template>
 
@@ -32,7 +33,12 @@ export default {
       swiper: null,
     };
   },
-  methods: {},
+  methods: {
+    logout() {
+      removeToken();
+      this.$router.push("/login");
+    },
+  },
   mounted() {
     this.swiper = new Swiper(".mySwiper", {
       effect: "cards",
@@ -171,6 +177,15 @@ export default {
   right: -50%;
   bottom: -50%;
   opacity: 0;
+}
+.exit {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 15px;
+  color: #3b3abe;
+  cursor: pointer;
 }
 </style>
 <style>
