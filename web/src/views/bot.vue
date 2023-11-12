@@ -101,7 +101,7 @@
 import { updateChatId, getChatHistory } from "@/api/index";
 import VueMarkdown from "vue-markdown";
 import config from "@/utils/config";
-import { getToken } from "@/utils/auth";
+import { getToken, removeToken } from "@/utils/auth";
 import io from "socket.io-client";
 export default {
   data() {
@@ -166,6 +166,9 @@ export default {
           this.scrollBottom();
           this.$refs.input.focus();
           this.$forceUpdate();
+        } else if (res.code === 403) {
+          removeToken();
+          this.$router.push("/login");
         }
       });
     },
@@ -202,7 +205,12 @@ export default {
         });
 
         this.socket.on("chat_id", (data) => {
-          updateChatId({ bot: this.info.name, chatId: data });
+          updateChatId({ bot: this.info.name, chatId: data }).then((res) => {
+            if (res.code === 403) {
+              removeToken();
+              this.$router.push("/login");
+            }
+          });
         });
 
         this.socket.on("response_end", () => {
@@ -266,6 +274,9 @@ export default {
         setTimeout(() => {
           this.scrollBottom();
         }, 2000);
+      } else if (res.code === 403) {
+        removeToken();
+        this.$router.push("/login");
       }
     });
   },
