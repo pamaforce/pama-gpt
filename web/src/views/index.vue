@@ -15,6 +15,7 @@
     <div :class="'hello hello-4' + (init ? ' init-4' : '')">
       <img src="../assets/icon.png" />
     </div>
+    <div class="hint">按照鼠标可以将卡片左右滑动选择哦~</div>
     <div class="exit" @click="logout">退出登录</div>
   </div>
 </template>
@@ -187,6 +188,14 @@ export default {
   color: #3b3abe;
   cursor: pointer;
 }
+.hint {
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  color: #3c3c3c;
+}
 </style>
 <style>
 .swiper {
@@ -236,7 +245,6 @@ export default {
   overflow: hidden !important;
   -webkit-line-clamp: 5;
 }
-
 .info {
   width: 100%;
   height: 100%;
