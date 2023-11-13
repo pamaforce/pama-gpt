@@ -38,6 +38,9 @@ pre {
   overflow: auto;
   white-space: pre-wrap;
 }
+img {
+  max-width: 100%;
+}
 .el-dialog {
   --el-dialog-title-font-size: 36px !important;
   --el-dialog-font-line-height: unset !important;
