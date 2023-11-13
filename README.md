@@ -1,5 +1,4 @@
 <div align="center">
-
 <h1>pama-gpt <img src="./web/public/favicon.ico" height="35"></h1>
 <p><em>WebSocket-Based Streaming GPT Conversation Application</em></p>
 </div>
@@ -20,7 +19,7 @@
 
 ## 项目结构
 
-说明项目的主要结构和模块划分，包括前端、后端、数据库等。
+项目的主要结构和模块包括前端、后端、数据库等。
 
 ```
 /
@@ -118,12 +117,12 @@ Vue 服务将在默认端口（通常是 `http://127.0.0.1:8080`）上启动，�
 
 - Python 3.x
 - SocketIO — WebSocket协议,全双工通信的协议
+- HTTP协议 - 用于实现Restful API
 - 流式传输 - 以流的形式传输数据
 - Flask - Python web框架
 - SQLAlchemy - 对数据库进行对象映射
 - MySQL - 关系型数据库
 - Flask-JWT - 生成和验证JWT token,实现用户会话
-- Poe API - 聊天机器人平台API
 
 
 ## 小组成员
