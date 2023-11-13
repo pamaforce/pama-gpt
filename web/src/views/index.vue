@@ -15,7 +15,7 @@
     <div :class="'hello hello-4' + (init ? ' init-4' : '')">
       <img src="../assets/icon.png" />
     </div>
-    <div class="hint">按照鼠标可以将卡片左右滑动选择哦~</div>
+    <div class="hint">按住鼠标可以将卡片左右滑动来选择哦~</div>
     <div class="exit" @click="logout">退出登录</div>
   </div>
 </template>
