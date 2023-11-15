@@ -26,6 +26,7 @@
         <p class="card-desc">{{ info.desc }}</p>
       </div>
     </div>
+    <div class="top-blank"></div>
     <div
       :class="'chat-card chat-card-' + item.role"
       v-for="(item, i) in chatList"
@@ -300,8 +301,9 @@ export default {
   align-items: center;
 }
 .top-card {
-  position: relative;
+  position: fixed;
   width: 600px;
+  z-index: 10;
   max-width: calc(100vw - 40px);
   border-radius: 20px;
   background-color: #f7f7f7;
@@ -587,6 +589,12 @@ export default {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+}
+.top-blank{
+  height: 130px;
+  z-index: 9;
+  transform: translateY(100%);
+  animation: bottom-in 0.5s ease-in-out forwards;
 }
 .bottom-blank {
   height: 100px;
