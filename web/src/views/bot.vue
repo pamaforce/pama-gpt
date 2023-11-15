@@ -1,6 +1,6 @@
 <template>
   <div class="chat">
-    <div class="top-card">
+    <div class="top-card" ref="topCard">
       <img :src="require('../assets/' + info.avatar)" class="card-avatar" />
       <div class="card-text">
         <div class="card-title">
@@ -26,7 +26,8 @@
         <p class="card-desc">{{ info.desc }}</p>
       </div>
     </div>
-    <div class="top-blank"></div>
+    <div class="top-blank" ref="heightBlock1"></div>
+    <div class="top-height" ref="heightBlock2"></div>
     <div
       :class="'chat-card chat-card-' + item.role"
       v-for="(item, i) in chatList"
@@ -274,6 +275,10 @@ export default {
       avatar: "ChatGPT.png",
     };
     this.info.name = this.$route.params.bot;
+    this.$nextTick(() => {
+      this.$refs.heightBlock1.style.height = `${this.$refs.topCard.clientHeight}px`;
+      this.$refs.heightBlock2.style.height = `${this.$refs.topCard.clientHeight}px`;
+    });
     getChatHistory(this.info.name).then((res) => {
       if (res.code === 0) {
         res.chat_history.map((item) => {
@@ -590,8 +595,18 @@ export default {
   display: flex;
   flex-direction: column;
 }
-.top-blank{
-  height: 130px;
+.top-height {
+  margin: 10px 0;
+}
+.top-blank {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background-image: linear-gradient(
+    0,
+    hsla(0, 0%, 100%, 0) 13.94%,
+    #fff 54.73%
+  );
   z-index: 9;
   transform: translateY(100%);
   animation: bottom-in 0.5s ease-in-out forwards;
